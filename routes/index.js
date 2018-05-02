@@ -40,7 +40,7 @@ router.post('/register',
 );
 
 router.get('/logout', catchErrors(authController.logout));
-router.post('/login', catchErrors(authController.login));
+router.post('/login', authController.login);
 
 router.get('/account', authController.isLogged, userController.account);
 router.post('/updateAccount', catchErrors(userController.updateAccount));
