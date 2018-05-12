@@ -101,3 +101,41 @@ exports.getStoresByTag = async (req, res) => {
 
   res.render('tag', { tags, title: 'Tags', tag, stores });
 };
+
+exports.searchStores = async (req, res) => {
+  const stores = await Store.find({
+    $text: {
+      $search: req.query.q
+    }
+  }, {
+    score: { $meta: 'textScore' }
+  })
+  .sort({
+    score: { $meta: 'textScore' }
+  });
+
+  res.json(stores);
+}
+
+exports.mapStores = async (req, res) => {
+  const coordinates = [req.query.lng, req.query.lat];
+
+  const q = {
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates
+        }
+      }
+    }
+  }
+
+  const stores = await Store.find(q).select('slug name description location photo').limit(10);
+
+  res.json(stores);
+}
+
+exports.map = (req, res) => {
+  res.render('map', { title: 'Map' });
+}
