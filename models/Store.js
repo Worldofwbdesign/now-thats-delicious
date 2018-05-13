@@ -37,6 +37,9 @@ const storeSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User'
   }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 storeSchema.index({
@@ -61,8 +64,15 @@ storeSchema.pre('save', async function(next) {
     this.slug = `${this.slug}-${storesWithSlug.length + 1}`;
   }
   next();
-  // TODO make more resiliant so slugs are unique
 });
+
+function autopopulate (next) {
+  this.populate('reviews');
+  next();
+}
+
+storeSchema.pre('find', autopopulate);
+storeSchema.pre('findOne', autopopulate);
 
 storeSchema.statics.getTagsList = function() {
   return this.aggregate([
@@ -71,5 +81,32 @@ storeSchema.statics.getTagsList = function() {
     { $sort: { count: -1 } }
   ]);
 }
+
+storeSchema.statics.getTopStores = function () {
+  return this.aggregate([
+    { $lookup: {
+      from: 'reviews',
+      localField: '_id',
+      foreignField: 'store',
+      as: 'reviews'
+    } },
+    { $match: { 'reviews.1': { $exists: true } } },
+    { $project: {
+      name: '$$ROOT.name',
+      slug: '$$ROOT.slug',
+      photo: '$$ROOT.photo',
+      reviews: '$$ROOT.reviews',
+      averageRating: { $avg: '$reviews.rating' }
+    } },
+    { $sort: { averageRating: -1 } },
+    { $limit: 10 }
+  ])
+}
+
+storeSchema.virtual('reviews', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'store'
+});
 
 module.exports = mongoose.model('Store', storeSchema);
