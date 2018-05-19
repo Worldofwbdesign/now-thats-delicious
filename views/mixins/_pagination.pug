@@ -1,0 +1,9 @@
+mixin pagination(pages, page)
+  .pagination
+    .pagination__prev
+      if (page > 1)
+        a(href=`/stores/page/${page - 1}`) Prev
+    .pagination__text You are on page #{page} from #{pages}
+    .pagination__next
+      if (page < pages)
+        a(href=`/stores/page/${Number(page) + 1}`) Next
